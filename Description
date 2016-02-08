@@ -1,9 +1,0 @@
-"""
-This file is based on Asness, Moskowitz, Pedersen., "Value and Momentum Everywhere"., The Journal of Finance., June 2013. Original data is available at AQR's website: https://www.aqr.com/library/data-sets/value-and-momentum-everywhere-original-paper-data. 
-
-Using the excel data, I recreate the results on p.940-942, which is a table showing the mean annual return, t-stat, stdev, and sharpe ratios of US, UK, Europe, Japan, and Global stocks from 1972-2011. The authors split each geography into 3 Value portfolios, 3 Momentum portfolios, a High Value minus Low Value portfolio, High Momentum minus Low Momentum portfolio, and a 50/50 combination portfolio. This gives a total of 45 portfolios. 
-
-I am able to successfully replicate the author's results in almost all cases. In the cases where there are minor differences, I suspect this is because data for different geographies is sometimes available across different dates, and I may have treated the lack of overlaps differently. 
-
-To replicate the results, I took the mean, stdev, t-stat and sharpe of of the 3 Value and Momentum portfolios for each geography. I then calculated the spread portfolios (e.g. Value 3 - Value 1), and 50/50 portfolios and performed the same calculations. I calculate the correlations between the Value and Momentum portfolios. For Global stock portfolios, I took the average of the 4 other regions, and performed similar calculations. Finally, I summarise the results in tables.
-"""
