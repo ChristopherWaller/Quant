@@ -1,0 +1,261 @@
+import pandas as pd
+from pandas import Series, DataFrame
+import numpy as np
+import math
+
+
+# General Definitions
+
+data = pd.read_csv('/Users/christopherwaller/Library/Mobile Documents/com~apple~CloudDocs/Last copy of Samsung Laptop files/Documents/Documents/Investment/Data/Value and Momentum (csv).csv')
+
+portfolios = data.columns
+n = len(data.DATE_YEAR.unique()) - 1
+
+def mean(x):
+    return x.mean() * 12
+
+def stdev(x):
+    return x.std()*math.sqrt(12)
+
+def t_stat(x, n):
+    return (mean(x) - 0)/(stdev(x)/math.sqrt(n))
+
+def sharpe(x):
+    return mean(x)/stdev(x)
+    
+means = mean(data)
+stdevs = stdev(data)
+t_stats = t_stat(data, n)
+sharpes = sharpe(data)
+
+Stock_portfolios = {
+    'mean': list(means),
+    'Stdev': list(stdevs),
+    't-stat': list(t_stats),
+    'Sharpe': list(sharpes)
+}
+
+
+
+# US stocks
+
+#creating DataFrame for Value and Momentum portfolios P1, P2, P3
+df1 = DataFrame(Stock_portfolios, index=portfolios).drop(['DATE_YEAR'], axis=0).T
+df1 = df1.T.ix[0:6].T
+# **the ix varies depending on country/asset class etc 
+
+#creating DataFrame for Value and Momentum arbitrage portfolios P3-P1
+# **change US to relevant geography/asset class
+VAL3_1 = data.VAL3US - data.VAL1US
+MOM3_1 = data.MOM3US - data.MOM1US
+VAL_MOM = VAL3_1 * 0.5 + MOM3_1 * 0.5
+
+spreads = [VAL3_1, MOM3_1, VAL_MOM]
+
+spread_means = []
+spread_stds = []
+spread_ts = []
+spread_sharpes = []
+
+for list in spreads:
+    spread_means.append(mean(list))
+    spread_stds.append(stdev(list))
+    spread_ts.append(t_stat(list, n))
+    spread_sharpes.append(sharpe(list))
+    
+Arbitrage_portfolios = {
+    'mean': spread_means,
+    'Stdev': spread_stds,
+    't-stat': spread_ts,
+    'Sharpe': spread_sharpes
+}
+
+portfolios2 = ['VAL3_1', 'MOM3_1', 'VAL_MOM']
+
+df2 = DataFrame(Arbitrage_portfolios, index=portfolios2).T
+
+#bringing df1 and df2 together for DataFrame with all portfolios
+frames = [df1.T.ix[:6], df2.T]
+# the ix varies depending on country/asset class etc
+
+df3 = pd.concat(frames)
+cols = df3.columns.tolist()
+cols = cols[2:] + cols[1:2] + cols[0:1]
+df3 = df3[cols].T
+np.round(df3, 3)
+
+VAL_MOM_CORR = VAL3_1.corr(MOM3_1)
+print "Correlation (Val, Mom) =", round(VAL_MOM_CORR, 2)
+
+
+
+# UK stocks
+
+n = len(data.VAL1UK.value_counts(dropna=True))/12
+n2 = len(data.MOM1UK.value_counts(dropna=True))/12
+
+#creating DataFrame for Value and Momentum portfolios P1, P2, P3
+df1 = DataFrame(Stock_portfolios, index=portfolios).drop(['DATE_YEAR'], axis=0).T
+df1 = df1.T.ix[6:12].T
+# **the ix varies depending on country/asset class etc 
+
+#creating DataFrame for Value and Momentum portfolios P3-P1
+# **change US to relevant heading
+VAL3_1 = data.VAL3UK - data.VAL1UK
+MOM3_1 = data.MOM3UK - data.MOM1UK
+VAL_MOM = VAL3_1 * 0.5 + MOM3_1 * 0.5
+
+Arbitrage_portfolios = {
+    'mean': [mean(VAL3_1), mean(MOM3_1), mean(VAL_MOM)],
+    'Stdev': [stdev(VAL3_1), stdev(MOM3_1), stdev(VAL_MOM)],
+    't-stat': [t_stat(VAL3_1, n), t_stat(MOM3_1, n2), t_stat(VAL_MOM, n)],
+    'Sharpe': [sharpe(VAL3_1), sharpe(MOM3_1), sharpe(VAL_MOM)]
+}
+
+portfolios2 = ['VAL3_1', 'MOM3_1', 'VAL_MOM']
+
+df2 = DataFrame(Arbitrage_portfolios, index=portfolios2).T
+
+#bringing df1 and df2 together for DataFrame with all portfolios
+frames = [df1.T, df2.T]
+
+df3 = pd.concat(frames)
+cols = df3.columns.tolist()
+cols = cols[2:] + cols[1:2] + cols[0:1]
+df3 = df3[cols].T
+np.round(df3, 3)
+
+VAL_MOM_CORR = VAL3_1.corr(MOM3_1)
+print "Correlation (Val, Mom) =", round(VAL_MOM_CORR, 2)
+
+
+
+# Europe stocks
+
+n = len(data.VAL1EU.value_counts(dropna=True))/12
+n2 = len(data.MOM1EU.value_counts(dropna=True))/12
+
+#creating DataFrame for Value and Momentum portfolios P1, P2, P3
+df1 = DataFrame(Stock_portfolios, index=portfolios).drop(['DATE_YEAR'], axis=0).T
+df1 = df1.T.ix[12:18].T
+# **the ix varies depending on country/asset class etc 
+
+#creating DataFrame for Value and Momentum portfolios P3-P1
+# **change US to relevant heading
+VAL3_1 = data.VAL3EU - data.VAL1EU
+MOM3_1 = data.MOM3EU - data.MOM1EU
+VAL_MOM = VAL3_1 * 0.5 + MOM3_1 * 0.5
+
+Arbitrage_portfolios = {
+    'mean': [mean(VAL3_1), mean(MOM3_1), mean(VAL_MOM)],
+    'Stdev': [stdev(VAL3_1), stdev(MOM3_1), stdev(VAL_MOM)],
+    't-stat': [t_stat(VAL3_1, n), t_stat(MOM3_1, n2), t_stat(VAL_MOM, n)],
+    'Sharpe': [sharpe(VAL3_1), sharpe(MOM3_1), sharpe(VAL_MOM)]
+}
+
+portfolios2 = ['VAL3_1', 'MOM3_1', 'VAL_MOM']
+
+df2 = DataFrame(Arbitrage_portfolios, index=portfolios2).T
+
+#bringing df1 and df2 together for DataFrame with all portfolios
+frames = [df1.T, df2.T]
+
+df3 = pd.concat(frames)
+cols = df3.columns.tolist()
+cols = cols[2:] + cols[1:2] + cols[0:1]
+df3 = df3[cols].T
+np.round(df3, 3)
+
+VAL_MOM_CORR = VAL3_1.corr(MOM3_1)
+print "Correlation (Val, Mom) =", round(VAL_MOM_CORR, 2)
+
+
+
+# Japan stocks
+
+n = len(data.VAL1JP.value_counts(dropna=True))/12
+n2 = len(data.MOM1JP.value_counts(dropna=True))/12
+
+#creating DataFrame for Value and Momentum portfolios P1, P2, P3
+df1 = DataFrame(Stock_portfolios, index=portfolios).drop(['DATE_YEAR'], axis=0).T
+df1 = df1.T.ix[18:24].T
+# **the ix varies depending on country/asset class etc 
+
+#creating DataFrame for Value and Momentum portfolios P3-P1
+# **change US to relevant heading
+VAL3_1 = data.VAL3JP - data.VAL1JP
+MOM3_1 = data.MOM3JP - data.MOM1JP
+VAL_MOM = VAL3_1 * 0.5 + MOM3_1 * 0.5
+
+Arbitrage_portfolios = {
+    'mean': [mean(VAL3_1), mean(MOM3_1), mean(VAL_MOM)],
+    'Stdev': [stdev(VAL3_1), stdev(MOM3_1), stdev(VAL_MOM)],
+    't-stat': [t_stat(VAL3_1, n), t_stat(MOM3_1, n2), t_stat(VAL_MOM, n)],
+    'Sharpe': [sharpe(VAL3_1), sharpe(MOM3_1), sharpe(VAL_MOM)]
+}
+
+portfolios2 = ['VAL3_1', 'MOM3_1', 'VAL_MOM']
+
+df2 = DataFrame(Arbitrage_portfolios, index=portfolios2).T
+
+#bringing df1 and df2 together for DataFrame with all portfolios
+frames = [df1.T, df2.T]
+
+df3 = pd.concat(frames)
+cols = df3.columns.tolist()
+cols = cols[2:] + cols[1:2] + cols[0:1]
+df3 = df3[cols].T
+np.round(df3, 3)
+
+VAL_MOM_CORR = VAL3_1.corr(MOM3_1)
+print "Correlation (Val, Mom) =", round(VAL_MOM_CORR, 2)
+
+
+
+# Global stocks
+
+#creating global portfolios as no data in excel
+VAL1GL = sum([data.VAL1US, data.VAL1UK, data.VAL1EU, data.VAL1JP]) / 4
+VAL2GL = sum([data.VAL2US, data.VAL2UK, data.VAL2EU, data.VAL2JP]) / 4
+VAL3GL = sum([data.VAL3US, data.VAL3UK, data.VAL3EU, data.VAL3JP]) / 4
+MOM1GL = sum([data.MOM1US, data.MOM1UK, data.MOM1EU, data.MOM1JP]) / 4
+MOM2GL = sum([data.MOM2US, data.MOM2UK, data.MOM2EU, data.MOM2JP]) / 4
+MOM3GL = sum([data.MOM3US, data.MOM3UK, data.MOM3EU, data.MOM3JP]) / 4
+VAL3_1 = VAL3GL - VAL1GL
+MOM3_1 = MOM3GL - MOM1GL
+VAL_MOM = VAL3_1 * 0.5 + MOM3_1 * 0.5
+
+portfolios = [VAL1GL, VAL2GL, VAL3GL, MOM1GL, MOM2GL, MOM3GL,
+             VAL3_1, MOM3_1, VAL_MOM]
+
+n = len(VAL1GL.value_counts(dropna=False))/12
+
+means = []
+stds = []
+ts = []
+sharpes = []
+
+for list in portfolios:
+    means.append(mean(list))
+    stds.append(stdev(list))
+    ts.append(t_stat(list, n))
+    sharpes.append(sharpe(list))
+    
+Stock_portfolios = {
+    'mean': means,
+    'Stdev': stds,
+    't-stat': ts,
+    'Sharpe': sharpes
+}
+
+portfolios = ['VAL1GL', 'VAL2GL', 'VAL3GL', 'MOM1GL', 'MOM2GL', 'MOM3GL',
+             'VAL3_1', 'MOM3_1', 'VAL_MOM']
+
+df1 = DataFrame(Stock_portfolios, index=portfolios)
+cols = df1.columns.tolist()
+cols = cols[2:] + cols[1:2] + cols[0:1]
+df1 = df1[cols]
+np.round(df1.T, 3)
+
+VAL_MOM_CORR = VAL3_1.corr(MOM3_1)
+print "Correlation (Val, Mom) =", round(VAL_MOM_CORR, 2)
