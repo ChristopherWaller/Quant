@@ -1,0 +1,143 @@
+"""
+The following is a portfolio optimiser, which takes the user's expected returns and covariances for a set of stocks and creates a portfolio to maximise it's sharpe ratio.
+"""
+
+import numpy as np
+import pandas as pd
+from pandas import Series, DataFrame
+import pandas.io.data as web
+import matplotlib.pyplot as plt
+import scipy.optimize as sco
+import scipy.interpolate as sci
+import datetime
+
+%matplotlib inline 
+
+data = pd.read_csv('/Users/christopherwaller/Library/Mobile Documents/com~apple~CloudDocs/Last copy of Samsung Laptop files/Documents/Documents/Investment/Data/Expected returns.csv')
+
+symbols = data.Ticker
+
+noa = len(symbols)
+
+
+# Historic Data
+
+historic_prices = DataFrame()
+
+#gives pricing data since Jan-2010.
+for sym in symbols:
+    historic_prices[sym] = web.DataReader(sym, data_source='yahoo',
+                              end=datetime.datetime.now())['Adj Close']
+    
+historic_daily_returns = np.log(historic_prices/historic_prices.shift(1))
+
+stdev_col = ['stdevs']
+stdevs = DataFrame(historic_daily_returns.std(), columns=stdev_col)
+covariances = historic_daily_returns.cov() * 252
+correlations = np.round(DataFrame(historic_daily_returns.corr()), 2)
+
+
+# Modifying Correlations/Covariances
+
+exp_cov = covariances
+exp_corr = correlations
+
+# Historic correlation probably too low
+a = 'OIL'
+b = 'PFC.L'
+c = 0.5
+exp_corr[a][b] = exp_corr[b][a] = c
+exp_cov[a][b] = exp_cov[b][a] = exp_corr[a][b] * stdevs.T[a] * stdevs.T[b] * 252
+
+# Historic correlation probably too low
+a = 'OIL'
+b = 'LEK.L'
+c = 0.3
+exp_corr[a][b] = exp_corr[b][a] = c
+exp_cov[a][b] = exp_cov[b][a] = exp_corr[a][b] * stdevs.T[a] * stdevs.T[b] * 252
+
+# Historic correlation probably too low
+a = '^FTSE'
+b = 'JD.L'
+c = 0.4
+exp_corr[a][b] = exp_corr[b][a] = c
+exp_cov[a][b] = exp_cov[b][a] = exp_corr[a][b] * stdevs.T[a] * stdevs.T[b] * 252
+
+
+# Optimizer
+
+exp_ret = data.Exp.convert_objects(convert_numeric=True)
+exp_ret_col = ['Expected Returns']
+DataFrame(zip(exp_ret), index=symbols, columns=exp_ret_col)
+
+#using current weights to begin process
+current_weights = data.Current_weight
+weights = current_weights
+weights /= np.sum(weights)
+
+port_ret = np.nansum(weights * np.array(exp_ret))
+
+exp_port_var = np.dot(weights.T, np.dot(exp_cov, weights))
+exp_port_std = np.sqrt(exp_port_var)
+
+#Monte Carlo Simulation:
+prets = []
+pvols = []
+
+for p in range(5000):
+    weights = np.random.random(noa)
+    weights /= np.sum(weights)
+    prets.append(np.sum(exp_ret * weights))
+    pvols.append(np.sqrt(np.dot(weights.T, np.dot(exp_cov, weights))))
+    
+prets = np.array(prets)
+pvols = np.array(pvols)
+
+plt.figure(figsize=(8, 4))
+plt.scatter(pvols, prets, c=prets/pvols, marker='o')
+plt.grid(True)
+plt.xlabel('expected stdev')
+plt.ylabel('expected return')
+plt.colorbar(label='Sharpe ratio')
+
+def statistics(weights):
+    weights = np.array(weights)
+    pret = np.sum(exp_ret * weights)
+    pvol = np.sqrt(np.dot(weights.T, np.dot(exp_cov, weights)))
+    return np.array([pret, pvol, pret/pvol])
+
+def min_func_sharpe(weights):
+    return -statistics(weights)[2]
+    
+#all weights equal to 1:
+cons = ({'type': 'eq', 'fun': lambda x: np.sum(x) -1})
+
+#weighted bounded between 0 and 1:
+bnds = tuple((0, 1) for x in range(noa))
+
+#inputting initial equal weights to begin optimization function:
+noa * [1./noa,]
+
+opts = sco.minimize(min_func_sharpe, noa * [1./noa,], method='SLSQP',
+                   bounds=bnds, constraints=cons)
+                
+  #optimal portfolio weights
+opt_port_weights = opts['x'].round(3)
+trades = opt_port_weights - current_weights
+
+def min_func_variance(weights):
+    return statistics(weights)[1] ** 2
+
+optv = sco.minimize(min_func_variance, noa * [1./noa,],
+                   method='SLSQP', bounds=bnds, 
+                   constraints=cons)
+
+optv['x'].round(len(symbols))
+
+
+# Results
+
+df1_cols = ['optimal weights', 'current weights', 'trades']
+df1 = DataFrame(zip(opt_port_weights, current_weights, trades), columns=df1_cols, index=symbols)
+df1
+
